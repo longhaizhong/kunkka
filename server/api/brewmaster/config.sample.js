@@ -25,19 +25,19 @@ module.exports = {
     }, {
       app: 'auth',
       name: 'company',
-      value: '©2016 UnitedStack Inc. All Rights Reserved. 京ICP备13015821号',
+      value: '©2017 同方工业有限公司. All Rights Reserved. 京ICP备13015821号',
       type: 'string',
       description: '登录界面-公司 copyright'
     }, {
       app: 'auth',
       name: 'corporation_name',
-      value: 'UnitedStack 有云',
+      value: '同方云平台',
       type: 'string',
       description: '登录界面-公司名称'
     }, {
       app: 'auth',
       name: 'home_url',
-      value: 'https://www.ustack.com',
+      value: 'http://www.thtf.com.cn/',
       type: 'string',
       description: '主页网址'
     }, {

@@ -24,7 +24,7 @@ module.exports = {
     }, {
       app: 'global',
       name: 'title',
-      value: 'UnitedStack 有云',
+      value: '同方云平台',
       type: 'string',
       description: '浏览器 tab 标题'
     }, {
