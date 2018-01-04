@@ -17,12 +17,20 @@
       "width": 160,
       "items": [{
         "items": [{
+          "title": ["gateway_limit"],
+          "key": "gw_limit",
+          "disabled": true
+        }, {
           "title": ["enable", "ext_gatway"],
           "key": "en_gw",
           "disabled": true
         }, {
           "title": ["disable", "ext_gatway"],
           "key": "dis_gw",
+          "disabled": true
+        }, {
+          "title": ["clear_rules"],
+          "key": "clear_rules",
           "disabled": true
         }, {
           "title": ["connect", "subnet"],

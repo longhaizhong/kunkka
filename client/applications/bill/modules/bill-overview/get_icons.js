@@ -6,17 +6,17 @@ function getIcons(name) {
       return 'router';
     case 'network.floating':
       return 'floating-ip';
-    case 'lbass.listener':
+    case 'lbaas.listener':
       return 'listener';
-    case 'lbass.loadbalancer':
+    case 'lbaas.loadbalancer':
       return 'lb';
     case 'volume.volume':
       return 'volume';
     case 'volume.snapshot':
       return 'snapshot';
-    case 'rate.limit.fip':
+    case 'ratelimit.fip':
       return 'bw-in';
-    case 'rate.limit.gw':
+    case 'ratelimit.gw':
       return 'bw-out';
     default:
       return name;

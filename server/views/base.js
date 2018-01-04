@@ -2,6 +2,7 @@
 
 function View(app, clientApps, currentView, viewModels) {
   this.name = currentView;
+  this.Url = require('url');
   this.react = require('react');
   this.reactDOMServer = require('react-dom/server');
   this.glob = require('glob');
@@ -83,7 +84,9 @@ View.prototype = {
         HALO.configs.kiki_url = req.session.endpoint.kiki[user.regionId];
       }
       if (req.session.endpoint.swift) {
-        HALO.configs.swift_url = req.session.endpoint.swift[user.regionId];
+        let swift = req.session.endpoint.swift;
+        HALO.configs.swift_url = swift[user.regionId];
+        HALO.configs.swift_port = swift[user.regionId + '_PUBLICPORT'];
       }
       if (this.plugins) {
         this.plugins.forEach(p => p.model.haloProcessor ? p.model.haloProcessor(user, HALO) : null);
@@ -106,7 +109,8 @@ View.prototype = {
         adminProjectId: this.config('admin_projectId'),
         neutron_network_vlanranges: this.config('neutron_network_vlanranges'),
         enable_register: setting.enable_register,
-        enable_register_approve: setting.enable_register_approve
+        enable_register_approve: setting.enable_register_approve,
+        telemerty: this.config('telemetry')
       },
       user: {
         projectId: user.projectId,

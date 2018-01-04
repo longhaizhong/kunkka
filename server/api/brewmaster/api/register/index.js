@@ -49,7 +49,6 @@ User.prototype = {
       const domainId = domains[0].id;
 
       let isCurrent = yield base.func.verifyKeyValueAsync(phone, code, that.memClient);
-      isCurrent = true;
       if (!isCurrent) {
         return next({status: 400, customRes: true, location: ['code'], msg: 'CodeError'});
       }
@@ -125,7 +124,7 @@ User.prototype = {
       });
 
       if (!roleId.project_owner) {
-        sendEmailByTemplateAsync(
+        yield sendEmailByTemplateAsync(
           adminEmail, '注册用户激活失败，请检查角色project_owner',
           {content: roleId.project_owner || '<p>project_owner 角色不存在，需创建</p>'}
         );
@@ -170,15 +169,24 @@ User.prototype = {
   verifyPhone: function (req, res, next) {
     const that = this;
     co(function *() {
-      const phone = parseInt(req.body.phone, 10);
-      if (!(/^1[34578]\d{9}$/.test(phone))) {
-        return next({customRes: true, status: 400, msg: 'PhoneError'});
-      }
-      const user = yield base.func.verifyUserAsync(req.admin.token, {phone});
-      if (user) {
-        next({customRes: true, status: 400, msg: 'Used'});
+      let cs = req.session.captcha;
+      let cb = req.body.captcha;
+      req.session.captcha = '';
+      if (cb && cs && cb.toString().toLowerCase() === cs.toString().toLowerCase()) {
+        const phone = parseInt(req.body.phone, 10);
+        if (!(/^1[34578]\d{9}$/.test(phone))) {
+          return next({customRes: true, status: 400, msg: 'PhoneError'});
+        }
+        const user = yield base.func.verifyUserAsync(req.admin.token, {phone});
+        if (user) {
+          next({customRes: true, status: 400, msg: 'Used'});
+        } else {
+          base.func.phoneCaptchaMemAsync(phone, that.memClient, req, res, next);
+        }
       } else {
-        base.func.phoneCaptchaMemAsync(phone, that.memClient, req, res, next);
+        return next({
+          customRes: true, status: 400, msg: 'CaptchaError'
+        });
       }
     }).catch(next);
   },

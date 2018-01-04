@@ -32,6 +32,7 @@ const detachNetwork = require('./pop/detach_network/index');
 const resizeInstance = require('./pop/resize/index');
 const deleteInstance = require('./pop/delete/index');
 const createAlarm = require('../alarm/pop/create/index');
+const chartZoom = require('./pop/chart_zoom/index');
 const rebuildInstance = require('./pop/rebuild_instance/index');
 const rescueInstance = require('./pop/rescue_instance/index');
 const changeAction = require('./pop/change_action/index');
@@ -58,7 +59,7 @@ class Model extends React.Component {
     let enableAlarm = HALO.settings.enable_alarm;
     if (enableAlarm) {
       tabs.push({
-        name: ['monitor'],
+        name: ['console'],
         key: 'monitor'
       }, {
         name: ['alarm'],
@@ -230,7 +231,7 @@ class Model extends React.Component {
             let ret = '';
             if (item.flavor.name) {
               let ram = unitConverter(item.flavor.ram, 'MB');
-              ret = item.flavor.vcpus + 'CPU / ' + ram.num + ram.unit + ' / ' + item.flavor.disk + 'GB';
+              ret = item.flavor.name + ' (' + item.flavor.vcpus + 'CPU / ' + ram.num + ram.unit + ' / ' + item.flavor.disk + 'GB' + ')';
             } else {
               ret = '(' + item.flavor.id.substr(0, 8) + ')';
             }
@@ -253,6 +254,14 @@ class Model extends React.Component {
       let table = this.state.config.table;
       table.data = res;
       table.loading = false;
+
+      res.forEach(r => {
+        if (r['OS-EXT-STS:task_state'] && r['OS-EXT-STS:task_state'] === 'powering-on') {
+          r.status = 'powering_on';
+        } else if (r['OS-EXT-STS:task_state'] && r['OS-EXT-STS:task_state'] === 'powering-off') {
+          r.status = 'powering_off';
+        }
+      });
 
       let detail = this.refs.dashboard.refs.detail;
       if (detail && detail.state.loading) {
@@ -707,28 +716,40 @@ class Model extends React.Component {
           let time = data.time;
 
           let resourceId = rows[0].id,
-            instanceMetricType = ['cpu.util', 'memory.usage', 'disk.read.bytes.rate', 'disk.write.bytes.rate'],
-            portMetricType = ['network.incoming.bytes.rate', 'network.outgoing.bytes.rate'];
+            telemerty = HALO.configs.telemerty,
+            instanceMetricType = ['cpu_util', 'memory.usage', 'disk.read.bytes.rate', 'disk.write.bytes.rate'],
+            portMetricType = ['network.incoming.bytes.rate', 'network.outgoing.bytes.rate'],
+            hour = telemerty.hour,
+            day = telemerty.day,
+            week = telemerty.week,
+            month = telemerty.month,
+            year = telemerty.year;
+
           let tabItems = [{
             name: __.three_hours,
-            key: '300',
-            value: '60',
+            key: hour,
+            value: hour,
             time: 'hour'
           }, {
             name: __.one_day,
-            key: '900',
-            value: '60',
+            key: day,
+            value: day,
             time: 'day'
           }, {
             name: __.one_week,
-            key: '3600',
-            value: '60',
+            key: week,
+            value: week,
             time: 'week'
           }, {
             name: __.one_month,
-            key: '21600',
-            value: '3600',
+            key: month,
+            value: month,
             time: 'month'
+          }, {
+            name: __.one_year,
+            key: year,
+            value: year,
+            time: 'year'
           }];
 
           let granularity = '', key = '';
@@ -736,15 +757,22 @@ class Model extends React.Component {
             granularity = data.granularity;
             key = data.key;
           } else {
-            granularity = '60';
-            key = '300';
+            granularity = hour;
+            key = hour;
             contents[tabKey] = (<div/>);
             updateDetailMonitor(contents, true);
           }
 
           tabItems.some((ele) => ele.key === key ? (ele.default = true, true) : false);
 
-          let updateContents = (arr, xAxisData) => {
+          let updateContents = (arr) => {
+            let chartDetail = {
+              key: key,
+              item: rows[0],
+              data: arr,
+              granularity: granularity,
+              time: time
+            };
             contents[tabKey] = (
               <LineChart
                 __={__}
@@ -760,7 +788,13 @@ class Model extends React.Component {
                     key: tab.key,
                     time: tab.time
                   });
-                }} >
+                }}
+                clickParent={(page) => {
+                  that.onDetailAction('description', 'chart_zoom', {
+                    chartDetail: chartDetail,
+                    page: page
+                  });
+                }}>
                 <Button value={__.create + __.alarm} onClick={this.onDetailAction.bind(this, 'description', 'create_alarm', { rawItem: rows[0] })}/>
               </LineChart>
             );
@@ -773,9 +807,10 @@ class Model extends React.Component {
           request.getResourceMeasures(resourceId, instanceMetricType, granularity, timeUtils.getTime(time)).then((res) => {
             let arr = res.map((r, index) => ({
               title: utils.getMetricName(instanceMetricType[index]),
-              unit: utils.getUnit('instance', instanceMetricType[index]),
-              yAxisData: utils.getChartData(r, key, timeUtils.getTime(time), 'instance'),
-              xAxis: utils.getChartData(r, key, timeUtils.getTime(time))
+              color: utils.getColor(instanceMetricType[index]),
+              unit: utils.getUnit('instance', instanceMetricType[index], r),
+              yAxisData: utils.getChartData(r, granularity, timeUtils.getTime(time), instanceMetricType[index], 'instance'),
+              xAxis: utils.getChartData(r, granularity, timeUtils.getTime(time), instanceMetricType[index])
             }));
             request.getNetworkResourceId(resourceId).then(_data => {
               const addresses = rows[0].addresses;
@@ -792,17 +827,14 @@ class Model extends React.Component {
               }
               request.getNetworkResource(granularity, timeUtils.getTime(time), rows[0], _datas).then(resourceData => {
                 let portArr = resourceData.map((_rd, index) => ({
-                  title: ips[parseInt(index / 2, 10)] + ' ' + utils.getMetricName(portMetricType[index % 2]),
-                  unit: utils.getUnit('instance', portMetricType[parseInt(index / 2, 10)]),
-                  yAxisData: utils.getChartData(_rd, granularity, timeUtils.getTime(time), 'instance'),
-                  xAxis: utils.getChartData(_rd, granularity, timeUtils.getTime(time))
+                  title: utils.getMetricName(portMetricType[index % 2], ips[parseInt(index / 2, 10)]),
+                  color: utils.getColor(portMetricType[index % 2]),
+                  unit: utils.getUnit('instance', portMetricType[parseInt(index / 2, 10)], _rd),
+                  yAxisData: utils.getChartData(_rd, granularity, timeUtils.getTime(time), portMetricType[index % 2], 'instance'),
+                  xAxis: utils.getChartData(_rd, granularity, timeUtils.getTime(time), portMetricType[index % 2])
                 }));
                 updateContents(arr.concat(portArr));
-              }).catch(error => {
-                updateContents([{}]);
               });
-            }).catch(error => {
-              updateContents([{}]);
             });
           }).catch(error => {
             updateContents([{}]);
@@ -959,7 +991,7 @@ class Model extends React.Component {
     let flavor = '';
     if (item.flavor.name) {
       let ram = unitConverter(item.flavor.ram, 'MB');
-      flavor = item.flavor.vcpus + 'CPU / ' + ram.num + ram.unit + ' / ' + item.flavor.disk + 'GB';
+      flavor = item.flavor.name + ' (' + item.flavor.vcpus + 'CPU / ' + ram.num + ram.unit + ' / ' + item.flavor.disk + 'GB' + ')';
     } else {
       flavor = '(' + item.flavor.id.substr(0, 8) + ')';
     }
@@ -1038,12 +1070,13 @@ class Model extends React.Component {
 
   getRelatedSourcesItems(items) {
     let attchVolumes = [];
+    let module = JSON.parse(HALO.settings.module_config).dashboard['volume-private'].show ? '/dashboard/volume-private/' : '/dashboard/volume-public/';
     items.volume.forEach((volume, i) => {
       let vid = '(' + volume.id.slice(0, 8) + ')',
         vname = volume.name || vid;
       attchVolumes.push({
         key: volume.name,
-        data: <a data-type="router" href={'/dashboard/volume/' + volume.id}>
+        data: <a data-type="router" href={module + volume.id}>
             {vname + ' ( ' + volume.volume_type + ' | ' + volume.size + 'GB )'}
           </a>,
         childItem: volume
@@ -1283,6 +1316,12 @@ class Model extends React.Component {
         createAlarm({
           type: 'instance',
           item: data.rawItem
+        });
+        break;
+      case 'chart_zoom':
+        chartZoom({
+          type: 'chart',
+          item: data
         });
         break;
       default:

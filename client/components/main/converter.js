@@ -32,6 +32,9 @@ module.exports = {
         item.name = this.getLangValue(lang, item.name);
       });
     }
+    if (config.search && config.search.placeholder) {
+      config.search.placeholder = this.getLangValue(lang, config.search.placeholder);
+    }
     if (config.btns) {
       config.btns.forEach((btn) => {
         if (btn.value) {
@@ -65,6 +68,14 @@ module.exports = {
     if (config.table.detail) {
       config.table.detail.tabs.forEach((tab) => {
         tab.name = this.getLangValue(lang, tab.name);
+      });
+    }
+
+    if (config.btn) {
+      config.btn.forEach((b) => {
+        if (b.value) {
+          b.value = this.getLangValue(lang, b.value);
+        }
       });
     }
   }

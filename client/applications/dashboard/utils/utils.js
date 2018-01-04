@@ -1,4 +1,5 @@
 const __ = require('locale/client/dashboard.lang.json');
+const moment = require('client/libs/moment');
 
 module.exports = {
   getVolumeType: function(volumeType) {
@@ -27,6 +28,9 @@ module.exports = {
         break;
       case 'month':
         date = new Date(now.getTime() - 30 * 24 * 3600 * 1000);
+        break;
+      case 'year':
+        date = new Date(now.getTime() - 365 * 24 * 3600 * 1000);
         break;
       default:
         date = new Date(now.getTime() - 3 * 3600 * 1000 - 20 * 60 * 1000);
@@ -57,6 +61,23 @@ module.exports = {
         return 'security-group';
       default:
         return resourceType.toLowerCase();
+    }
+  },
+  getURL: function(breadcrumb, objKey) {
+    let url = '',
+      folders = breadcrumb.slice(1);
+
+    if(breadcrumb.length > 1) {
+      url = objKey ? (folders.join('/') + '/' + objKey) : folders.join('/');
+    } else {
+      url = objKey ? objKey : '';
+    }
+
+    return url;
+  },
+  getDate: function(time, fromNow) {
+    if(typeof time === 'object' && fromNow) {
+      return moment(new Date(time)).fromNow();
     }
   }
 };

@@ -59,7 +59,7 @@ class QuotaPop extends React.Component {
         key: 'listener',
         link: 'listener'
       }, {
-        title: __.pool,
+        title: __.resource_pool,
         key: 'pool',
         link: 'pool'
       }, {
@@ -90,17 +90,17 @@ class QuotaPop extends React.Component {
 
     types.forEach((item) => {
       quota[2].items.push({
-        title: __[item] + __.volume,
+        title: (__[item] !== undefined ? __[item] : item) + __.volume,
         key: 'volumes_' + item,
         link: 'volume'
       });
       quota[2].items.push({
-        title: __[item] + __.volume + __.gigabyte + __.unit_gb,
+        title: (__[item] !== undefined ? __[item] : item) + __.volume + __.gigabyte + __.unit_gb,
         key: 'gigabytes_' + item,
         link: 'volume'
       });
       quota[2].items.push({
-        title: __[item] + __.snapshot,
+        title: (__[item] !== undefined ? __[item] : item) + __.snapshot,
         key: 'snapshots_' + item,
         link: 'snapshot'
       });
@@ -115,18 +115,20 @@ class QuotaPop extends React.Component {
     let overview = this.state.overview;
     let total = overview[key].total;
     let newNumber = Number(e.target.value);
-    if (e.target.value) {
+    if (!isNaN(newNumber) && e.target.value !== '') {
       if (key === 'ram') {
         newNumber *= 1024;
       }
 
-      if(total === -1) {
-        this.state.targetQuota[key].total = newNumber;
-      } else {
+      if(total !== -1) {
         this.state.targetQuota[key].total = Number(total) + newNumber;
       }
       this.state.addedQuota[key] = newNumber;
+    } else {
+      this.state.targetQuota[key].total = total;
+      this.state.addedQuota[key] = 0;
     }
+
     this.setState({
       value: e.target.value,
       addedQuota: this.state.addedQuota,

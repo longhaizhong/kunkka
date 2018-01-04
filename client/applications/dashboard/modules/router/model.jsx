@@ -19,6 +19,7 @@ const createVpnService = require('./pop/create_vpn_service/index');
 const createTunnel = require('./pop/create_tunnel/index');
 const editTunnel = require('./pop/edit_tunnel/index');
 const createPortForwarding = require('./pop/create_portforwarding/index');
+const clearRules = require('./pop/clear_rules/index');
 
 const config = require('./config.json');
 const __ = require('locale/client/dashboard.lang.json');
@@ -28,6 +29,11 @@ const msgEvent = require('client/applications/dashboard/cores/msg_event');
 const getStatusIcon = require('../../utils/status_icon');
 const getErrorMessage = require('client/applications/dashboard/utils/error_message');
 const utils = require('../../utils/utils');
+
+// 是否显示网关限速按钮
+config.btns[1].dropdown.items[0].items[0].hide = !HALO.settings.enable_floatingip_bandwidth;
+// 是否显示清空转发规则按钮
+config.btns[1].dropdown.items[0].items[3].hide = !HALO.settings.enable_router_portforwarding;
 
 class Model extends React.Component {
 
@@ -232,30 +238,55 @@ class Model extends React.Component {
           tip: hasSubnet ? __.tip_router_has_subnet : null,
           onDelete: function(_data, cb) {
             request.deleteRouters(rows).then((res) => {
-              let enableBandwidth = HALO.settings.enable_floatingip_bandwidth;
-              if (enableBandwidth && rows[0].external_gateway_info) {
-                request.deleteLimit(rows[0].id).then(() => {
-                  cb(true);
-                }).catch((error) => {
-                  cb(false, getErrorMessage(error));
-                });
-              } else {
-                cb(true);
-              }
+              cb(true);
             }).catch((error) => {
               cb(false, getErrorMessage(error));
             });
           }
         });
         break;
+      case 'gw_limit':
+        publicGateway(rows[0], null, () => {
+          this.refresh({
+            tableLoading: true,
+            detailLoading: true,
+            clearState: true,
+            detailRefresh: true
+          }, true);
+        }, true);
+        break;
       case 'en_gw':
-        publicGateway(rows[0]);
+        publicGateway(rows[0], null, () => {
+          this.refresh({
+            tableLoading: true,
+            detailLoading: true,
+            clearState: true,
+            detailRefresh: true
+          }, true);
+        });
         break;
       case 'dis_gw':
-        disableGateway(rows[0]);
+        disableGateway(rows[0], null, () => {
+          this.refresh({
+            tableLoading: true,
+            detailLoading: true,
+            clearState: true,
+            detailRefresh: true
+          }, true);
+        });
         break;
       case 'cnt_subnet':
         relatedSubnet(rows[0]);
+        break;
+      case 'clear_rules':
+        clearRules(rows[0], null, () => {
+          this.refresh({
+            tableLoading: true,
+            detailLoading: true,
+            clearState: true,
+            detailRefresh: true
+          }, true);
+        });
         break;
       default:
         break;
@@ -288,8 +319,12 @@ class Model extends React.Component {
         case 'en_gw':
           btns[key].disabled = (rows.length === 1 && !rows[0].external_gateway_info) ? false : true;
           break;
+        case 'gw_limit':
         case 'dis_gw':
           btns[key].disabled = (rows.length === 1 && rows[0].external_gateway_info) ? false : true;
+          break;
+        case 'clear_rules':
+          btns[key].disabled = (rows.length === 1) ? false : true;
           break;
         case 'cnt_subnet':
           btns[key].disabled = (rows.length === 1) ? false : true;
@@ -731,11 +766,7 @@ class Model extends React.Component {
         });
         break;
       case 'delete':
-        let routerId = data.router.id;
-        let portData = {
-          id: data.portFrwd.id
-        };
-        request.deletePortForwarding(routerId, portData).then((res) => {
+        request.deletePortForwarding(data.portFrwd.id).then((res) => {
           this.refresh({
             detailRefresh: true
           }, true);

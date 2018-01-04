@@ -1,8 +1,11 @@
 {
   "tabs": [{
-    "name": ["user"],
+    "name": ["personal-user"],
     "key": "user",
     "default": true
+  }, {
+    "name": ["service-user"],
+    "key": "service-user"
   }],
   "btns": [{
     "value": ["create", "user"],

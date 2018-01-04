@@ -178,7 +178,7 @@ function pop(obj, parent, callback) {
               if (!isError) {
                 setTypes();
                 refs.charge.setState({
-                  value: HALO.prices ? (Math.max.apply(null, HALO.prices.other['volume.volume']) * cap.min).toFixed(4) : 0,
+                  value: HALO.prices ? (Math.max.call(null, HALO.prices.volume[volumeType]) * cap.min).toFixed(4) : 0,
                   hide: false
                 });
               } else {
@@ -228,7 +228,8 @@ function pop(obj, parent, callback) {
       });
     },
     onAction: function(field, state, refs) {
-      let volType = refs.type.state.value;
+
+      let volType = refs.type.refs.volume_type ? refs.type.refs.volume_type.state.value : refs.type.state.data;
 
       switch (field) {
         case 'capacity_size': {
@@ -262,7 +263,7 @@ function pop(obj, parent, callback) {
             if (!isError) {
               if (sliderEvent || inputEvnet) {
                 refs.charge.setState({
-                  value: HALO.prices ? (Math.max.apply(null, HALO.prices.other['volume.volume']) * value).toFixed(4) : 0
+                  value: HALO.prices ? (Math.max.call(null, HALO.prices.volume[refs.type.state.value]) * value).toFixed(4) : 0
                 });
               }
             } else {
@@ -288,7 +289,7 @@ function pop(obj, parent, callback) {
             isError = max < min || max <= 0;
           }
 
-          refs.type.state.data && refs.capacity_size.setState({
+          volType && refs.capacity_size.setState({
             min: min || 1,
             max: max,
             value: min,
@@ -297,12 +298,11 @@ function pop(obj, parent, callback) {
             error: false,
             hide: false
           });
-
           //set charge
           if (ENABLE_CHARGE) {
-            if (!isError) {
+            if (!isError && state.value) {
               refs.charge.setState({
-                value: HALO.prices ? (Math.max.apply(null, HALO.prices.other['volume.volume']) * min).toFixed(4) : 0
+                value: HALO.prices ? (Math.max.call(null, HALO.prices.volume[state.value]) * min).toFixed(4) : 0
               });
             } else {
               refs.charge.setState({
