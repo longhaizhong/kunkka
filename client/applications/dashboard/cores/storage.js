@@ -43,7 +43,7 @@ const map = {
   port: ['subnet', 'instance'],
   router: ['subnet', 'port', 'network'],
   floatingip: ['instance', 'port'],
-  instance: ['port', 'volume', 'image'],
+  instance: ['port', 'volume', 'image', 'floatingip'],
   image: ['instance'],
   backup: ['volume', 'snapshot'],
   loadbalancer: ['securitygroup', 'port']
@@ -82,7 +82,7 @@ Storage.prototype = {
           return;
         }
       }
-      promises[type] = that['get' + type[0].toUpperCase() + type.slice(1) + 'List']().then(function(data) {
+      promises[type] = that['get' + type[0].toUpperCase() + type.slice(1).replace('_', '') + 'List']().then(function(data) {
         that.cache[type] = data;
         return data;
       });
