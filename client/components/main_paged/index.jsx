@@ -13,6 +13,11 @@ const getTime = require('client/utils/time_unification');
 const tabFilter = require('client/libs/tab');
 
 const PAGE_LIMIT = [10, 20, 50, 100, 200];
+// 开发环境下，数据较少，添加1和3的分页，便于开发。
+if(process.env.NODE_ENV !== 'production') {
+  PAGE_LIMIT.unshift(3);
+  PAGE_LIMIT.unshift(1);
+}
 
 class Main extends React.Component {
   constructor(props) {

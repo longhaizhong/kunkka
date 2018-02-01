@@ -1,20 +1,8 @@
 {
-  "tabs": [{
-    "name": ["charge-record"],
-    "key": "charge-record",
-    "default": true
-  }],
-  "btns": [{
-    "key": "export",
-    "value": ["export", "record"],
-    "icon": "download"
-  }, {
-    "key": "refresh",
-    "icon": "refresh"
-  }],
   "table": {
-    "dataKey": "charge_id",
+    "dataKey": "id",
     "limit": 10,
+    "hideLimit": true,
     "loading": true,
     "column": [{
       "title": ["total_cny"],
@@ -23,11 +11,15 @@
     }, {
       "title": ["charge-type"],
       "dataIndex": "type",
-      "key": "type"
+      "key": "charge-type"
+    }, {
+      "title": ["target"],
+      "dataIndex": "target",
+      "key": "target"
     }, {
       "title": ["channel"],
-      "dataIndex": "come_from",
-      "key": "come_from"
+      "dataIndex": "channel",
+      "key": "channel"
     }, {
       "title": ["charge-time"],
       "dataIndex": "charge_time",
@@ -35,5 +27,12 @@
       "type": "time"
     }],
     "data": []
+  },
+  "detail": {
+    "tabs": [{
+      "name": ["bill_detail"],
+      "key": "bill_detail",
+      "default": true
+    }]
   }
 }

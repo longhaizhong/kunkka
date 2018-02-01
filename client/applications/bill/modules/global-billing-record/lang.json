@@ -1,0 +1,14 @@
+{
+  "en": {
+    "all_types": "All Types",
+    "bill_detail": "Details",
+    "search_by_id": "Project ID",
+    "search_by_name": "Project Name"
+  },
+  "zh-CN": {
+    "all_types": "全部类别",
+    "bill_detail": "消费明细",
+    "search_by_id": "项目ID",
+    "search_by_name": "项目名称"
+  }
+}
